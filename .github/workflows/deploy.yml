@@ -18,7 +18,7 @@ jobs:
 
       - name: Decode SSH key and save
         run: |
-          echo "${{ secrets.EC2_SSH_KEY_B64 }}" | base64 -d > private_key.pem
+          echo "${{ secrets.EC2_SSH_KEY_B64 }}" > private_key.pem
           chmod 600 private_key.pem
 
       - name: Copy image to EC2 and run it
