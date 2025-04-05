@@ -21,9 +21,20 @@ jobs:
           echo "${{ secrets.EC2_SSH_KEY_B64 }}" | base64 -d > private_key.pem
           chmod 600 private_key.pem
 
-      - name: Copy image to EC2 and run it
+      - name: Install bzip2 on remote server
         run: |
-          docker save fastapi-app | bzip2 | ssh -o StrictHostKeyChecking=no -i private_key.pem ${{ secrets.EC2_USER }}@${{ secrets.EC2_HOST }} 'bunzip2 | sudo docker load'
+          ssh -o StrictHostKeyChecking=no -i private_key.pem ${{ secrets.EC2_USER }}@${{ secrets.EC2_HOST }} '
+            sudo apt-get update -qq && sudo apt-get install -y bzip2 docker.io
+          '
+
+      - name: Transfer Docker image
+        run: |
+          docker save fastapi-app | gzip | ssh -o StrictHostKeyChecking=no -i private_key.pem ${{ secrets.EC2_USER }}@${{ secrets.EC2_HOST }} '
+            gunzip | sudo docker load
+          '
+
+      - name: Deploy container
+        run: |
           ssh -o StrictHostKeyChecking=no -i private_key.pem ${{ secrets.EC2_USER }}@${{ secrets.EC2_HOST }} << 'EOF'
             sudo docker stop fastapi-app || true
             sudo docker rm fastapi-app || true
